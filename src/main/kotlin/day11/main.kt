@@ -6,7 +6,7 @@ import day11.Seat.Companion.seatFromInput
 import getFileFromArgs
 import java.io.File
 
-enum class SpaceState { EMPTY, OCCUPIED, FLOOR}
+enum class SpaceState { EMPTY, OCCUPIED, FLOOR }
 
 fun main(args: Array<String>) {
     val file = getFileFromArgs(args)
