@@ -29,25 +29,23 @@ class Game(private val seed: List<Long>) {
     }
 
     private fun processNext(round: Long) {
-        val nextShout = shoutedNumbers[lastShout]!!.getNextShout()
+        lastShout = shoutedNumbers[lastShout]!!.getNextShout()
 
-        shoutedNumbers[nextShout]?.setLastShout(round)
-                ?: run { shoutedNumbers[nextShout] = LastShout(round) }
-
-        lastShout = nextShout
+        shoutedNumbers[lastShout]?.setLastShout(round)
+                ?: run { shoutedNumbers[lastShout] = LastShout(round) }
     }
 }
 
-data class LastShout(
-        private var lastShout: Long,
-        private var wasFirst: Boolean = true,
-        private var previousShout: Long = 0
-) {
+data class LastShout(private var lastShout: Long) {
+
+    private var previousShout: Long = 0
+
     fun setLastShout(shout: Long) {
-        wasFirst = false
         previousShout = lastShout
         lastShout = shout
     }
 
     fun getNextShout() = if (wasFirst) 0L else lastShout - previousShout
+
+    private val wasFirst: Boolean get() = previousShout == 0L
 }
