@@ -5,12 +5,12 @@ package day18
 import getFileFromArgs
 
 fun main(args: Array<String>) {
-    val lines = getFileFromArgs(args).readLines()
+    val expressionsTokens = getFileFromArgs(args).readLines().map { Parser(it).parse().tokens }
 
-    val result1 = lines.map { Parser(it).parse().evaluate1() }.sum()
+    val result1 = expressionsTokens.map { Evaluator1(it).evaluate() }.sum()
     println(result1)
 
-    val result2 = lines.map { Parser(it).parse().evaluate2() }.sum()
+    val result2 = expressionsTokens.map { Evaluator2(it).evaluate() }.sum()
     println(result2)
 }
 
@@ -46,31 +46,43 @@ class Operator(private val operator: Char) : Token() {
 }
 
 class Expression : Token() {
-    private val tokens = mutableListOf<Token>()
+    val tokens = mutableListOf<Token>()
 
-    fun evaluate1(): Long = evaluateTokens1(tokens)
+    fun addValue(value: Char) = tokens.add(Value(value.toString().toLong()))
+    fun addOperator(operator: Char) = tokens.add(Operator(operator))
+    fun newExpression() = Expression().also { tokens.add(it) }
+}
 
-    fun evaluateTokens1(tokens: List<Token>): Long {
+class Evaluator1(private val tokens: List<Token>) {
+
+    fun evaluate(): Long = evaluateTokens(tokens)
+
+    private fun evaluateTokens(tokens: List<Token>): Long {
         val lastValue = when (val last = tokens.last()) {
             is Value -> last.value
-            is Expression -> last.evaluate1()
+            is Expression -> evaluateTokens(last.tokens)
             else -> throw IllegalArgumentException("Wrong token")
         }
         if (tokens.size == 1) return lastValue
 
         val operator = tokens[tokens.size - 2] as Operator
-        val subValue = evaluateTokens1(tokens.take(tokens.size - 2))
+        val subValue = evaluateTokens(tokens.take(tokens.size - 2))
 
         return operator.applyOperation(lastValue, subValue)
     }
+}
 
-    fun evaluate2(): Long = evaluateTokens2(tokens)
+class Evaluator2(private val tokens: List<Token>) {
+
+    fun evaluate(): Long = evaluateTokens(tokens)
 
     // I'm not proud of this, but it works
-    fun evaluateTokens2(tokens: List<Token>): Long {
-        val tokensWithoutExpressions = tokens.map { if (it is Expression) Value(it.evaluate2()) else it }
+    private fun evaluateTokens(tokens: List<Token>): Long {
+        val tokensWithoutExpressions = tokens.map {
+            if (it is Expression) Value(evaluateTokens(it.tokens)) else it
+        }
         val onlyMultiOperations = applySumOperations(tokensWithoutExpressions)
-        return evaluateTokens1(onlyMultiOperations)
+        return Evaluator1(onlyMultiOperations).evaluate()
     }
 
     private fun applySumOperations(valueTokens: List<Token>): MutableList<Token> {
@@ -103,8 +115,4 @@ class Expression : Token() {
 
         return onlyMultiOperations
     }
-
-    fun addValue(value: Char) = tokens.add(Value(value.toString().toLong()))
-    fun addOperator(operator: Char) = tokens.add(Operator(operator))
-    fun newExpression() = Expression().also { tokens.add(it) }
 }
